@@ -18,7 +18,7 @@ dbConnect();
 app.use(cookieParser());
 app.use(express.json());
 app.use(cors({
-    origin:"https://mega-ed-tech-git-main-priyanshu-rajs-projects.vercel.app",
+    origin:"https://mega-ed-tech.vercel.app",
     credentials:true
 }))
 
