@@ -15,7 +15,7 @@ exports.createSection = async (req, res) => {
     //create db entry
     const newSection = await Section.create({ name ,courseId});
     //course me v section ka entry daalna hoga
-    await Course.findByIdAndUpdate(
+    const updatedCourse=await Course.findByIdAndUpdate(
       courseId ,
       {
         $push: {
@@ -23,12 +23,17 @@ exports.createSection = async (req, res) => {
         },
       },
       { new: true }
-    );
+    ).populate({
+      path:"content",
+      populate:{
+        path:"subSection"
+      }
+    }).exec();
     //response return
     return res.status(200).json({
       success: true,
       message: "Section created SuccessFully",
-      data: newSection,
+      data: updatedCourse,
     });
   } catch (error) {
     res.status(500).json({
@@ -39,30 +44,50 @@ exports.createSection = async (req, res) => {
   }
 };
 
+
 exports.updateSection = async (req, res) => {
   try {
-    //fetch detail
-    const { name, sectionId } = req.body;
-    //validate
-    if (!name || !sectionId) {
+    const { name, sectionId, courseId } = req.body;
+
+    // ✅ Validate required fields
+    if (!name || !sectionId || !courseId) {
       return res.status(400).json({
         success: false,
-        message: "All properties are required",
+        message: "All fields (name, sectionId, courseId) are required",
       });
     }
-    //update
+
+    // ✅ Update the section name
     const updatedSection = await Section.findByIdAndUpdate(
-      sectionId ,
+      sectionId,
       { name },
       { new: true }
     );
-    //course me section update nhi karna padega q ki wha to id store hai or update karne k baad v id same hoga
-    //return response
+
+    if (!updatedSection) {
+      return res.status(404).json({
+        success: false,
+        message: "Section not found",
+      });
+    }
+
+    // ✅ Fetch the updated course with populated sections and sub-sections
+    const updatedCourse = await Course.findById(courseId)
+      .populate({
+        path: "content",
+        populate: {
+          path: "subSection",
+        },
+      });
+
+    // ✅ Return updated course
     return res.status(200).json({
       success: true,
       message: "Section updated successfully",
+      data: updatedCourse,
     });
   } catch (error) {
+    console.error("Error while updating section:", error);
     return res.status(500).json({
       success: false,
       message: "Error while updating section",
@@ -75,7 +100,7 @@ exports.deleteSection = async (req, res) => {
   try {
 
     //const{sectionId}=req.query;
-    const{sectionId}=req.params;
+    const{sectionId}=req.body;
     console.log("section id ",sectionId);
     
     if(!sectionId){
@@ -95,19 +120,25 @@ exports.deleteSection = async (req, res) => {
 
     await Section.findByIdAndDelete(sectionId);
 
-    await Course.findByIdAndUpdate(
+    const newCourse=await Course.findByIdAndUpdate(
         section.courseId,
         {
             $pull:{
                 content:sectionId
             }
         }
-    )
+    ).populate({
+      path:"content",
+      populate:{
+        path:"subSection"
+      }
+    }).exec()
 
     return res.status(200)
     .json({
         success:true,
-        message:"particular section deleted successFully"
+        message:"particular section deleted successFully",
+        data:newCourse
     })
 
 
@@ -120,3 +151,4 @@ exports.deleteSection = async (req, res) => {
     });
   }
 };
+

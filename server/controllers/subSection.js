@@ -1,4 +1,5 @@
 require("dotenv").config();
+const Course = require("../modules/course");
 const Section = require("../modules/section");
 const SubSection = require("../modules/subSection");
 const { uploadImage } = require("../utils/imageUploader");
@@ -13,7 +14,7 @@ exports.createSubSection = async (req, res) => {
     const video = req.files.video;
 
     //validation
-    if (!title  || !description || !sectionId || !video) {
+    if (!title || !description || !sectionId || !video) {
       return res.status(400).json({
         success: false,
         message: "All properties are required",
@@ -21,21 +22,19 @@ exports.createSubSection = async (req, res) => {
     }
 
     const videoUrl = await uploadImage(video, process.env.FOLDER_NAME);
-    console.log("video url hai",videoUrl);
-    
+    console.log("video url hai", videoUrl);
 
     const payload = {
       title,
       description,
-      timeDuration:videoUrl.duration,
+      timeDuration: videoUrl.duration,
       videoUrl: videoUrl.secure_url,
       sectionId,
     };
 
     const newSubSection = await SubSection.create(payload);
 
-
-    const updatedSubSection = await Section.findByIdAndUpdate(
+    const updatedSection = await Section.findByIdAndUpdate(
       sectionId,
       {
         $push: {
@@ -45,12 +44,21 @@ exports.createSubSection = async (req, res) => {
       { new: true }
     );
 
+    const updatedCourse = await Course.findById(
+      updatedSection.courseId
+    ).populate({
+      path: "content",
+      populate: {
+        path: "subSection",
+      },
+    });
+
     //hw log populated query
 
     return res.status(200).json({
       success: true,
       message: "Subsection created successfully",
-      data: newSubSection,
+      data: updatedCourse,
     });
   } catch (error) {
     return res.status(500).json({
@@ -63,9 +71,11 @@ exports.createSubSection = async (req, res) => {
 
 exports.updateSubSection = async (req, res) => {
   try {
-    const { subSectionId, title, description, timeDuration } = req.body;
-    const video = req.files.videoFile;
-
+    const { subSectionId, title, description, timeDuration ,sectionId} = req.body;
+    
+    const video = req.files?.video;
+    console.log("video hai",video);
+    
     const subSection = await SubSection.findById(subSectionId);
 
     if (!subSection) {
@@ -86,10 +96,26 @@ exports.updateSubSection = async (req, res) => {
 
     await subSection.save();
 
+    const sectionUpdated=await Section.findById(sectionId);
+
+    if(!sectionUpdated){
+      return res.status(400).json({
+        success:false,
+        message:"No section found for this SubSection"
+      })
+    }
+
+    const updatedCourse=await Course.findById(sectionUpdated.courseId).populate({
+      path:"content",
+      populate:{
+        path:"subSection"
+      }
+    })
+
     return res.status(200).json({
       success: true,
       message: "SubSection updated seccessfully",
-      data: subSection,
+      data: updatedCourse,
     });
   } catch (error) {
     return res.status(500).json({
@@ -100,10 +126,12 @@ exports.updateSubSection = async (req, res) => {
   }
 };
 
+
 exports.deleteSubSection = async (req, res) => {
   try {
     const { subSectionId } = req.body;
-
+    //console.log("Subsection id",subSectionId);
+    
     if (!subSectionId) {
       return res.status(400).json({
         success: false,
@@ -119,9 +147,11 @@ exports.deleteSubSection = async (req, res) => {
       });
     }
 
+    // Delete the subSection
     await SubSection.findByIdAndDelete(subSectionId);
 
-    const updatedSubSection = await Section.findByIdAndUpdate(
+    // Remove the reference from Section
+    const updatedSection = await Section.findByIdAndUpdate(
       subSection.sectionId,
       {
         $pull: {
@@ -131,10 +161,25 @@ exports.deleteSubSection = async (req, res) => {
       { new: true }
     );
 
+    if (!updatedSection) {
+      return res.status(400).json({
+        success: false,
+        message: "No section found for this SubSection",
+      });
+    }
+
+    // ✅ Fetch updated course (like you did in updateSubSection)
+    const updatedCourse = await Course.findById(updatedSection.courseId).populate({
+      path: "content",
+      populate: {
+        path: "subSection",
+      },
+    });
+
     return res.status(200).json({
       success: true,
-      message: "subSection deleted successfully",
-      data:updatedSubSection
+      message: "SubSection deleted successfully",
+      data: updatedCourse, // returning the fresh course
     });
   } catch (error) {
     return res.status(500).json({

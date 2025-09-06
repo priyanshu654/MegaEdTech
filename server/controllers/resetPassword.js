@@ -1,6 +1,7 @@
 const User=require("../modules/user");
 const mailSender=require("../utils/mailSender");
 const bcrypt=require("bcrypt");
+const resetPasswordTemplate=require("../template/resetPassword")
 
 exports.resetPasswordToken=async (req,res)=>{
     try {
@@ -28,9 +29,9 @@ exports.resetPasswordToken=async (req,res)=>{
         //update user by adding token and expiry time
         const updateUser=await User.findOneAndUpdate({email},{token:token,resetPasswordExpires:Date.now()+5*60*1000},{new:true});
         //create url
-        const url=`http//localhost:3000/update-password/${token}`;
+        const url=`http://localhost:3000/update-password/${token}`;
         //send email containg url
-        await mailSender(email,`Reset password link ${url}`,"Reset password link");
+        await mailSender(email,resetPasswordTemplate(url),"Reset password link");
         //return response
         return res.status(200)
         .send({

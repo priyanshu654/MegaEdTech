@@ -6,17 +6,13 @@ import { useEffect, useState } from "react";
 import getAllCategory from "../../services/operations/categoryApi";
 import { IoIosArrowDropdownCircle } from "react-icons/io";
 import { AiOutlineShoppingCart } from "react-icons/ai";
+import ProfileDropdown from "../core/HomePage/ProfileDropDown";
 
 function NavBar() {
   const location = useLocation();
-
   const { token } = useSelector((state) => state.auth);
   const { user } = useSelector((state) => state.profile);
   const { totalItems } = useSelector((state) => state.cart);
-    //console.log(token);
-    //console.log(user);
-    
-    
   const [category, setCategory] = useState([]);
 
   useEffect(() => {
@@ -33,7 +29,7 @@ function NavBar() {
   }, []);
 
   const matchRoute = (route) => {
-    return matchPath({ path: route }, location.pathname);
+    return matchPath({ path: route, end: route === "/" }, location.pathname);
   };
 
   return (
@@ -51,18 +47,21 @@ function NavBar() {
               <li key={index}>
                 {el.title === "Catalog" ? (
                   <div className="relative group cursor-pointer flex items-center gap-1">
-                    <p>{el.title}</p>
+                    <p
+                      className={`transition ${
+                        matchRoute("/catalog") ? "text-yellow-25" : ""
+                      }`}
+                    >
+                      {el.title}
+                    </p>
                     <IoIosArrowDropdownCircle className="text-lg" />
-
                     {/* Dropdown */}
                     <div className="absolute left-1/2 top-full z-20 mt-2 w-[300px] -translate-x-1/2 rounded-md bg-richblack-5 text-richblack-900 p-4 shadow-md opacity-0 invisible group-hover:visible group-hover:opacity-100 transition-all duration-200">
-                      {/* Arrow */}
                       <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-45 h-4 w-4 bg-richblack-5"></div>
-
                       {category.length > 0 ? (
-                        category.map((el, index) => (
+                        category.map((el, idx) => (
                           <Link
-                            key={index}
+                            key={idx}
                             to={`/catalog/${el.name}`}
                             className="block px-3 py-2 hover:bg-richblack-100 rounded text-center"
                           >
@@ -89,30 +88,34 @@ function NavBar() {
             ))}
           </ul>
         </nav>
+
+        {/* Auth Buttons / Profile / Cart */}
         <div className="flex gap-x-4 items-center">
-          {user && user?.accountType != "Instructor" && (
-            <Link>
-              <AiOutlineShoppingCart />
-              {totalItems > 0 && <span>{totalItems}</span>}
+          {user && user?.accountType !== "Instructor" && (
+            <Link to="/dashboard/cart" className="relative">
+              <AiOutlineShoppingCart size={25} />
+              {totalItems > 0 && (
+                <span className="absolute -top-2 -right-2 bg-yellow-100 text-black rounded-full text-xs px-1">
+                  {totalItems}
+                </span>
+              )}
             </Link>
           )}
-          {token === null && (
-            <Link to="/login">
-              <button className="border border-richblack-700 bg-richblack-800 px-[12px] py-[8px] text-richblack-100 rounded-md">
-                Log in
-              </button>
-            </Link>
+          {!token && (
+            <>
+              <Link to="/login">
+                <button className="border border-richblack-700 bg-richblack-800 px-[12px] py-[8px] text-richblack-100 rounded-md">
+                  Log in
+                </button>
+              </Link>
+              <Link to="/signup">
+                <button className="border border-richblack-700 bg-richblack-800 px-[12px] py-[8px] text-richblack-100 rounded-md">
+                  Sign Up
+                </button>
+              </Link>
+            </>
           )}
-          {
-                token === null && (
-                    <Link to="/signup">
-                        <button  className='border border-richblack-700 bg-richblack-800 px-[12px] py-[8px] text-richblack-100 rounded-md'>
-                            Sign Up
-                        </button>
-                    </Link>
-                )
-            }
-            
+          {token && <ProfileDropdown />}
         </div>
       </div>
     </div>

@@ -17,6 +17,7 @@ import planLessons from "../assets/Images/Plan_your_lessons.svg";
 import instructor from "../assets/Images/Instructor.png";
 import TabExplore from "../components/core/HomePage/TabExplore";
 import Footer from "../components/core/Footer/Footer";
+import ReviewSlider from "../components/common/ReviewSlider";
 
 function Home() {
   const htmlCode = `<!DOCTYPE html>\n<html>\n<head><title>Example<title>\n</head><body>\n<h1><a href="">Welcome</a>\n</h1>\n<p>This is a beautifully crafted paragraph</p>\n<p>This is a beginner-friendly guide.</p>\n<a href">Visit Our Blog</a>\n<button>Click Me for a Surprise</button>\n</body\n</html\n`;
@@ -300,8 +301,15 @@ function Home() {
           </div>
         </div>
       </div>
+      <div className="h-fit p-10 ">
+        <div className=" flex  justify-center w-screen mb-6">
+          <h1 className="text-richblack-25 text-3xl font-bold">Reviews from other learners</h1>
+        </div>
+        
+        <ReviewSlider/>
+      </div>
 
-      <div>
+      <div className="mt-7">
         <Footer/>
       </div>
     </>

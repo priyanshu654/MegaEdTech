@@ -57,7 +57,14 @@ const courseSchema = new mongoose.Schema({
 		type: String,
 		enum: ["Draft", "Published"],
 	},
-});
+  Instructions:{
+    type:[String],
+  },
+  totalDuration:{
+    type:Number,
+    default:0
+  }
+},{timestamps:true});
 
 const Course=mongoose.model("Course",courseSchema);
 module.exports=Course;

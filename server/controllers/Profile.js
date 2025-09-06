@@ -1,8 +1,11 @@
+require("dotenv").config();
 const Course = require("../modules/course");
+const CourseProgress=require("../modules/courseProgress")
 const Profile = require("../modules/profile");
 const User = require("../modules/user");
 const { uploadImage } = require("../utils/imageUploader");
-require("dotenv").config();
+const secondsToDuration =require("../utils/secToDuration")
+
 
 exports.updateProfile = async (req, res) => {
   try {
@@ -190,22 +193,79 @@ exports.getEnrolledCourses = async (req, res) => {
       const userDetails = await User.findOne({
         _id: userId,
       })
-        .populate({path:"courses"})
+        .populate({
+          path: "courses",
+          populate: {
+            path: "content",  // Changed from "content" to match your schema
+            populate: {
+              path: "subSection",
+              select: "-videoUrl"
+            }
+          }
+        })
         .exec()
+      
       if (!userDetails) {
         return res.status(400).json({
           success: false,
-          message: `Could not find user with id: ${userDetails}`,
+          message: `Could not find user with id: ${userId}`,  // Fixed variable reference
         })
       }
+      //console.log("User details",userDetails.courses);
+      const enrolledCourse=userDetails.courses.filter((course)=>(
+        course.status==="Published"
+      ))
+      
+      // Calculate course durations and progress
+      const coursesWithProgress = await Promise.all(
+        enrolledCourse.map(async (course) => {
+          let totalDuration = 0
+          let totalSubsections = 0
+          
+          // Calculate duration and subsection count
+          course.content?.forEach(section => {
+            section.subSection?.forEach(sub => {
+              //console.log("sub hai",sub);
+              
+              totalDuration += parseInt(sub.timeDuration) || 0
+              totalSubsections++
+            })
+          })
+
+          // Get course progress
+          const progress = await CourseProgress.findOne({
+            courseId: course._id,
+            userId: userId
+          })
+
+          console.log(progress);
+          
+          const completed = progress?.completedVideos?.length || 0
+          const progressPercentage = totalSubsections > 0 
+            ? Math.round((completed / totalSubsections) * 100 * 100) / 100 
+            : 100
+          
+          return {
+            ...course.toObject(),
+            totalDuration: secondsToDuration(totalDuration),
+            progressPercentage,
+            completedVideos: completed,
+            totalSubsections
+          }
+        })
+      )
+      
+
       return res.status(200).json({
         success: true,
-        data: userDetails.courses,
+        data: coursesWithProgress,  // Now includes enriched course data
       })
     } catch (error) {
+      console.error("Error in getEnrolledCourses:", error)
       return res.status(500).json({
         success: false,
-        message: error.message,
+        message: "Internal server error",
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       })
     }
-};
+}

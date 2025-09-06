@@ -128,7 +128,7 @@ exports.signUp=async(req,res)=>{
             password:hashedPassword,
             accountType,
             additionalInfo:profileDetails._id,
-            profilePic: `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`
+            profilePic: `https://api.dicebear.com/5.x/initials/svg?seed=${fName} ${lName}`
         }
         //if passing as objet UserPayload we need to unwrap userPayload other wise do it like otp payload User.create(userPayload);
         const registerResponse=await User.create({...userPayload});
@@ -221,6 +221,8 @@ exports.login=async(req,res)=>{
 exports.changePassword=async(req,res)=>{
     try {
         //phle email or password new password laao
+        console.log(req.body);
+        
         const{email,password,newPassword}=req.body;
         //all field validation lgao
         if(!email || !password ||!newPassword){
