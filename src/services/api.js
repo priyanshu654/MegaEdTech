@@ -15,6 +15,7 @@ export const authApi={
 export const profileApi={
     GET_PROFILE:BASE_URL+"/profile/getUserDetails",
     GET_USER_ENROLLED_COURSES_API:BASE_URL+"/profile/getEnrolledCourse",
+    GET_INSTRUCTOR_DATA_API: BASE_URL + "/profile/instructorDashboard",
 
 }
 

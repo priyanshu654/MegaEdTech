@@ -269,3 +269,34 @@ exports.getEnrolledCourses = async (req, res) => {
       })
     }
 }
+
+exports.instructorDashboard = async (req, res) => {
+  try {
+    const courses = await Course.find({ instructor: req.user.id })
+
+    const coursesWithStats = courses.map((course) => {
+      const totalStudentsEnrolled = course.studentsEnrolled.length
+      const totalAmountGenerated = totalStudentsEnrolled * course.price
+
+      return {
+        _id: course._id,
+        courseName: course.title,
+        courseDescription: course.description,
+        totalStudentsEnrolled,
+        totalAmountGenerated,
+      }
+    })
+
+    return res.status(200).json({
+      success: true,
+      data: coursesWithStats,
+    })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    })
+  }
+}
